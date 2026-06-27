@@ -42,6 +42,9 @@ export default function Navbar({ openSearch, setCatValue }) {
 
   }, [result])
 
+  const [showPopover, setShowPopover] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
   const handleLogout = async () => {
     try {
       const response = await api.get('/users/logout');
@@ -60,7 +63,7 @@ export default function Navbar({ openSearch, setCatValue }) {
   };
 
   return (
-    <div className='h-10 max-w-full text-white text-sm bg-[#5a86ec] px-5 flex justify-between items-center'>
+    <div className='h-10 max-w-full text-white text-sm bg-[#5a86ec] px-5 flex justify-between items-center relative'>
 
       <div className='flex gap-8 justify-between items-center'>
         <Link to='/'>Ecomm</Link>
@@ -77,25 +80,79 @@ export default function Navbar({ openSearch, setCatValue }) {
         </select>
       </div>
 
-      <div className='flex items-center gap-4'>
+      <div className='flex items-center gap-4 z-50'>
         <Link className='m-2 flex' to='/cart'>
           <i className="fa-solid fa-cart-shopping text-lg transition-all hover:scale-125"></i><sup className='h-3 w-3 m-1 text-[#5a86ec] bg-white rounded-lg flex items-center justify-center'>{totalQnty}</sup>
         </Link>
         
         {user ? (
-          <div className='flex items-center gap-3'>
-            <span className='text-xs font-semibold bg-[#87a8f4] px-2 py-0.5 rounded'>Hi, {user.name}</span>
-            <button 
-              onClick={handleLogout} 
-              className='text-xs bg-white text-[#5a86ec] px-2.5 py-0.5 rounded hover:bg-white/80 hover:scale-105 active:scale-95 transition-all font-semibold'
-            >
-              Logout
-            </button>
+          <div className='relative flex items-center'>
+            <i 
+              className="fa-solid fa-circle-user text-xl cursor-pointer hover:scale-110 active:scale-95 transition-all text-white"
+              onClick={() => setShowPopover(!showPopover)}
+            ></i>
+            
+            {showPopover && (
+              <>
+                {/* Click outside target to close */}
+                <div 
+                  className="fixed inset-0 z-40 bg-transparent cursor-default" 
+                  onClick={() => setShowPopover(false)}
+                ></div>
+                
+                {/* Shadcn-like Popover */}
+                <div className="absolute right-0 top-7 w-44 bg-white border border-slate-200 rounded-md shadow-lg py-1.5 z-50 text-slate-800 transition-all animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="px-3.5 py-2 border-b border-slate-100">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Account</span>
+                    <div className="font-semibold text-slate-800 text-xs truncate mt-0.5">{user.name}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowPopover(false);
+                      setShowConfirmDialog(true);
+                    }}
+                    className="w-full text-left px-3.5 py-2 text-xs text-red-600 font-bold hover:bg-red-50 hover:text-red-700 transition-colors flex items-center gap-2"
+                  >
+                    <i className="fa-solid fa-right-from-bracket text-[10px]"></i>
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <Link className='m-2' to='/login'>Login/Signup</Link>
         )}
       </div>
+
+      {/* Shadcn-like AlertDialog for Logout Confirmation */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-200">
+          <div className="w-[90%] max-w-sm bg-white border border-slate-200 rounded-lg shadow-xl p-5 text-slate-800 animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-sm font-semibold text-slate-900">Are you sure you want to log out?</h3>
+            <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+              This will end your current session. You will need to sign in again to access your personal cart and account settings.
+            </p>
+            <div className="flex justify-end gap-2.5 mt-5">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded hover:bg-slate-50 active:scale-95 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmDialog(false);
+                  handleLogout();
+                }}
+                className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded hover:bg-red-700 active:scale-95 transition-all"
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
