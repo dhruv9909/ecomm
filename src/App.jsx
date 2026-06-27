@@ -12,6 +12,7 @@ import Footer from './components/Footer';
 import Category from './pages/Category';
 import { useFetchProductsQuery } from './redux/feature/apiSlice';
 import ProductModal from './components/ProductModal';
+import SellerDashboard from './pages/SellerDashboard';
 import Search from './pages/Search';
 import { useDispatch, useSelector } from 'react-redux';
 import api from './services/api';
@@ -102,6 +103,7 @@ function App() {
           <Route exact path='/cart' element={<Cart />} />
           <Route exact path='/checkout' element={<Checkout />} />
           <Route exact path='/orders' element={<Orders />} />
+          <Route exact path='/seller-dashboard' element={<SellerDashboard />} />
           <Route exact path='/category' element={<Category data={data} isFetching={isFetching} openModal={openModal} />} />
           <Route exact path='/search' element={<Search data={data} search={search} openModal={openModal} />} />
         </Routes>

@@ -114,6 +114,16 @@ export default function Navbar({ openSearch, setCatValue }) {
                     <i className="fa-solid fa-box text-[10px]"></i>
                     My Orders
                   </Link>
+                  {user && user.type === 'seller' && (
+                    <Link
+                      to="/seller-dashboard"
+                      onClick={() => setShowPopover(false)}
+                      className="w-full text-left px-3.5 py-2 text-xs text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-800 transition-colors flex items-center gap-2"
+                    >
+                      <i className="fa-solid fa-gauge-high text-[10px]"></i>
+                      Seller Dashboard
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       setShowPopover(false);
