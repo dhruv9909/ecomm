@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import api from '../services/api';
+import { clearUser } from '../redux/feature/userSlice';
+import { emptyCart } from '../redux/feature/cartSlice';
+import { toast } from 'react-toastify';
 
 export default function Navbar({ openSearch, setCatValue }) {
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // select user from Redux state
+  const user = useSelector((state) => state.user.user);
 
   //select
   const [select, setSelect] = useState("");
@@ -34,6 +42,23 @@ export default function Navbar({ openSearch, setCatValue }) {
 
   }, [result])
 
+  const handleLogout = async () => {
+    try {
+      const response = await api.get('/users/logout');
+      if (response.data.status === 'Logged out!') {
+        toast.success('Logged out successfully!');
+        dispatch(clearUser());
+        dispatch(emptyCart());
+        navigate('/');
+      } else {
+        toast.error(response.data.status || 'Logout failed!');
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+      toast.error('Error logging out!');
+    }
+  };
+
   return (
     <div className='h-10 max-w-full text-white text-sm bg-[#5a86ec] px-5 flex justify-between items-center'>
 
@@ -52,11 +77,24 @@ export default function Navbar({ openSearch, setCatValue }) {
         </select>
       </div>
 
-      <div className='flex items-center'>
+      <div className='flex items-center gap-4'>
         <Link className='m-2 flex' to='/cart'>
           <i className="fa-solid fa-cart-shopping text-lg transition-all hover:scale-125"></i><sup className='h-3 w-3 m-1 text-[#5a86ec] bg-white rounded-lg flex items-center justify-center'>{totalQnty}</sup>
         </Link>
-        <Link className='m-2' to='/login'>Login/Signup</Link>
+        
+        {user ? (
+          <div className='flex items-center gap-3'>
+            <span className='text-xs font-semibold bg-[#87a8f4] px-2 py-0.5 rounded'>Hi, {user.name}</span>
+            <button 
+              onClick={handleLogout} 
+              className='text-xs bg-white text-[#5a86ec] px-2.5 py-0.5 rounded hover:bg-white/80 hover:scale-105 active:scale-95 transition-all font-semibold'
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <Link className='m-2' to='/login'>Login/Signup</Link>
+        )}
       </div>
 
     </div>

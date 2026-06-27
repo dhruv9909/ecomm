@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import Register from './pages/Register';
 import Login from './pages/Login';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Cart from './pages/Cart';
@@ -11,9 +11,35 @@ import Category from './pages/Category';
 import { useFetchProductsQuery } from './redux/feature/apiSlice';
 import ProductModal from './components/ProductModal';
 import Search from './pages/Search';
+import { useDispatch, useSelector } from 'react-redux';
+import api from './services/api';
+import { setUser, clearUser } from './redux/feature/userSlice';
+import { setCart } from './redux/feature/cartSlice';
 
 
 function App() {
+
+  const dispatch = useDispatch();
+  const authChecked = useSelector((state) => state.user.authChecked);
+
+  // Check auth session status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await api.get('/users/auth');
+        if (response.data && response.data.user) {
+          dispatch(setUser(response.data.user));
+          dispatch(setCart(response.data.user.cart || []));
+        } else {
+          dispatch(clearUser());
+        }
+      } catch (err) {
+        console.error('Session check failed:', err);
+        dispatch(clearUser());
+      }
+    };
+    checkAuth();
+  }, [dispatch]);
 
   // data fetching
   const { data, error, isFetching } = useFetchProductsQuery();
@@ -50,6 +76,14 @@ function App() {
 
 // category value to maintain category
   const [catValue, setCatValue] = useState('');
+
+  if (!authChecked) {
+    return (
+      <div className='py-5 flex justify-center items-center w-full max-w-full bg-white h-screen'>
+        <div className='h-16 w-16 border-8 border-[#5a86ec] rounded-[50%] border-t-white animate-spin'></div>
+      </div>
+    );
+  }
 
   return (
     <div className='h-full max-w-full box-border bg-gradient-to-r from-white to-[#5a86ec]'>
