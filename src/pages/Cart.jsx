@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { addToCart, emptyCart, removeItem, removeSingleItem } from '../redux/feature/cartSlice'
 
 export default function Cart() {
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const data = useSelector(state => state.cart.cart);
 
@@ -78,6 +80,17 @@ export default function Cart() {
           </tbody>
 
         </table>
+
+        {data && data.length > 0 && (
+          <div className='mt-6 flex justify-end'>
+            <button 
+              onClick={() => navigate('/checkout')} 
+              className='py-3 px-8 text-sm font-bold text-[#5a86ec] bg-white rounded-xl shadow-lg transition-all duration-300 hover:bg-[#dee8fe] hover:scale-105 active:scale-95 transform'
+            >
+              Proceed to Checkout <i className="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+          </div>
+        )}
 
       </div>
     </div>

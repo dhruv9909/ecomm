@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
 import Footer from './components/Footer';
 import Category from './pages/Category';
 import { useFetchProductsQuery } from './redux/feature/apiSlice';
@@ -98,6 +99,7 @@ function App() {
           <Route exact path='/login' element={<Login />} />
           <Route exact path='/register' element={<Register />} />
           <Route exact path='/cart' element={<Cart />} />
+          <Route exact path='/checkout' element={<Checkout />} />
           <Route exact path='/category' element={<Category data={data} isFetching={isFetching} openModal={openModal} />} />
           <Route exact path='/search' element={<Search data={data} search={search} openModal={openModal} />} />
         </Routes>
