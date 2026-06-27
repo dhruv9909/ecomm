@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { emptyCart } from '../redux/feature/cartSlice';
@@ -51,36 +51,93 @@ export default function Checkout() {
     setTotalQnty(qty);
   }, [cartItems]);
 
+  const [isOrdered, setIsOrdered] = useState(false);
+  const [orderId, setOrderId] = useState('');
+
   const [searchParams] = useSearchParams();
   const paymentSuccess = searchParams.get('success') === 'true';
   const paymentCancel = searchParams.get('cancel') === 'true';
 
-  // Redirect to home or cart if cart is empty and order is not placed yet
-  const [isOrdered, setIsOrdered] = useState(false);
-  const [orderId, setOrderId] = useState('');
+  const hasProcessedRef = useRef(false);
 
   // Handle Stripe Redirection Query Params on mount/update
   useEffect(() => {
-    if (paymentSuccess) {
+    if (hasProcessedRef.current) return;
+
+    const processPaymentSuccess = async () => {
+      hasProcessedRef.current = true;
       const savedFormData = localStorage.getItem('ecomm_checkout_form');
+      const savedCart = localStorage.getItem('ecomm_checkout_cart');
+      const savedTotal = localStorage.getItem('ecomm_checkout_total');
+
+      let parsedForm = formData;
+      let parsedCart = cartItems;
+      let parsedTotal = totalPrice;
+
       if (savedFormData) {
         try {
-          const parsed = JSON.parse(savedFormData);
-          setFormData(parsed);
+          parsedForm = JSON.parse(savedFormData);
+          setFormData(parsedForm);
         } catch (e) {
           console.error('Error parsing saved checkout form:', e);
         }
       }
 
+      if (savedCart) {
+        try {
+          parsedCart = JSON.parse(savedCart);
+        } catch (e) {
+          console.error('Error parsing saved checkout cart:', e);
+        }
+      }
+
+      if (savedTotal) {
+        parsedTotal = Number(savedTotal) || totalPrice;
+      }
+
       const randomOrderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
       setOrderId(randomOrderId);
-      setIsOrdered(true);
 
-      // Clear cart
-      dispatch(emptyCart());
-      localStorage.removeItem('ecomm_checkout_form');
-      toast.success('Payment completed & order placed successfully!');
+      try {
+        // Create the order on the backend database
+        await api.post('/orders', {
+          orderId: randomOrderId,
+          items: parsedCart,
+          totalAmount: parsedTotal,
+          shippingAddress: {
+            name: parsedForm.name,
+            phone: parsedForm.phone,
+            address: parsedForm.address,
+            city: parsedForm.city,
+            state: parsedForm.state,
+            zip: parsedForm.zip,
+            country: parsedForm.country
+          },
+          paymentMethod: 'card',
+          paymentStatus: 'Completed'
+        });
+
+        setIsOrdered(true);
+        // Clear cart in Redux state (cart deletion on server is handled inside POST /orders endpoint)
+        dispatch(emptyCart());
+        toast.success('Payment completed & order placed successfully!');
+      } catch (err) {
+        console.error('Failed to save order to database:', err);
+        toast.error('Payment succeeded, but we failed to record your order. Please contact support.');
+      } finally {
+        // Clear local storage checkout caches
+        localStorage.removeItem('ecomm_checkout_form');
+        localStorage.removeItem('ecomm_checkout_cart');
+        localStorage.removeItem('ecomm_checkout_total');
+        // Clear query parameters from address bar to prevent back button triggers
+        navigate('/checkout', { replace: true });
+      }
+    };
+
+    if (paymentSuccess) {
+      processPaymentSuccess();
     } else if (paymentCancel) {
+      hasProcessedRef.current = true;
       const savedFormData = localStorage.getItem('ecomm_checkout_form');
       if (savedFormData) {
         try {
@@ -91,13 +148,17 @@ export default function Checkout() {
         }
       }
       toast.warn('Payment was cancelled. You can try again or select Cash on Delivery.');
-      // Clear query parameters
+      
+      // Clean up
+      localStorage.removeItem('ecomm_checkout_form');
+      localStorage.removeItem('ecomm_checkout_cart');
+      localStorage.removeItem('ecomm_checkout_total');
       navigate('/checkout', { replace: true });
     }
-  }, [paymentSuccess, paymentCancel, dispatch, navigate]);
+  }, [paymentSuccess, paymentCancel, dispatch, navigate, cartItems, totalPrice, formData]);
 
   useEffect(() => {
-    // Only redirect if they are not in the process of placing/confirming an order
+    // Only redirect to home if they are not in the success state
     if (cartItems.length === 0 && !isOrdered && !paymentSuccess) {
       toast.info('Your cart is empty. Redirecting to home...');
       navigate('/');
@@ -121,8 +182,10 @@ export default function Checkout() {
 
     if (paymentMethod === 'card') {
       try {
-        // Save form details to local storage so we can display them on return
+        // Save checkout details to local storage before redirecting to Stripe
         localStorage.setItem('ecomm_checkout_form', JSON.stringify(formData));
+        localStorage.setItem('ecomm_checkout_cart', JSON.stringify(cartItems));
+        localStorage.setItem('ecomm_checkout_total', totalPrice.toString());
 
         // Create Stripe checkout session
         const response = await api.post('/checkout/create-checkout-session', {
@@ -130,7 +193,6 @@ export default function Checkout() {
         });
 
         if (response.data && response.data.url) {
-          // Redirect to Stripe checkout
           window.location.href = response.data.url;
         } else {
           toast.error('Failed to create payment session. Please try again.');
@@ -141,14 +203,36 @@ export default function Checkout() {
         toast.error(errMsg);
       }
     } else {
-      // Place simulated COD order
       const randomOrderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
-      setOrderId(randomOrderId);
-      setIsOrdered(true);
+      
+      try {
+        // Post COD order to backend
+        await api.post('/orders', {
+          orderId: randomOrderId,
+          items: cartItems,
+          totalAmount: totalPrice,
+          shippingAddress: {
+            name,
+            phone,
+            address,
+            city,
+            state,
+            zip,
+            country
+          },
+          paymentMethod: 'cod',
+          paymentStatus: 'Pending'
+        });
 
-      // Clear cart in Redux & DB
-      dispatch(emptyCart());
-      toast.success('Order placed successfully!');
+        setOrderId(randomOrderId);
+        setIsOrdered(true);
+        dispatch(emptyCart());
+        toast.success('Order placed successfully!');
+      } catch (err) {
+        console.error('Failed to place COD order:', err);
+        const errMsg = err.response?.data?.error || 'Failed to place order. Please try again.';
+        toast.error(errMsg);
+      }
     }
   };
 

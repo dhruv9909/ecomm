@@ -106,6 +106,14 @@ export default function Navbar({ openSearch, setCatValue }) {
                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Account</span>
                     <div className="font-semibold text-slate-800 text-xs truncate mt-0.5">{user.name}</div>
                   </div>
+                  <Link
+                    to="/orders"
+                    onClick={() => setShowPopover(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-800 transition-colors flex items-center gap-2"
+                  >
+                    <i className="fa-solid fa-box text-[10px]"></i>
+                    My Orders
+                  </Link>
                   <button
                     onClick={() => {
                       setShowPopover(false);
