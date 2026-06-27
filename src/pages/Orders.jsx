@@ -162,8 +162,22 @@ export default function Orders() {
                           <p className="text-sm font-bold text-gray-800 max-w-sm md:max-w-md truncate">
                             {item.title}
                           </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Qty: {item.qnty} × ${Math.round(item.price)}
+                          <p className="text-[10px] text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
+                            <span>Qty: {item.qnty} × ${Math.round(item.price)}</span>
+                            <span className="text-gray-300">|</span>
+                            <span
+                              className={`px-2 py-0.5 rounded-[4px] text-[9px] font-bold ${
+                                item.deliveryStatus === 'Delivered'
+                                  ? 'bg-green-50 text-green-700 border border-green-150'
+                                  : item.deliveryStatus === 'Shipped'
+                                  ? 'bg-blue-50 text-blue-700 border border-blue-150'
+                                  : item.deliveryStatus === 'Cancelled'
+                                  ? 'bg-red-50 text-red-700 border border-red-150'
+                                  : 'bg-amber-50 text-amber-700 border-amber-150'
+                              }`}
+                            >
+                              Delivery: {item.deliveryStatus || 'Pending'}
+                            </span>
                           </p>
                         </div>
                       </div>
